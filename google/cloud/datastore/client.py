@@ -595,7 +595,7 @@ class Client(ClientWithProject):
 
         :rtype: tuple
         :returns: The pair of the number of index updates and a list of
-              :class:`.entity_pb2.Key` for each incomplete key
+              :class:`google.cloud.datastore.key.Key` for each incomplete key
               that was completed in the commit. Empty if not in_batch.
 
         :raises: :class:`ValueError` if ``entities`` is a single entity.
@@ -619,7 +619,10 @@ class Client(ClientWithProject):
         index_updates = 0
         updated_keys = []
         if not in_batch:
-            index_updates, updated_keys = current.commit(retry=retry, timeout=timeout)
+            index_updates, upd_keys = current.commit(retry=retry, timeout=timeout)
+
+        if upd_keys:
+            updated_keys = [helpers.key_from_protobuf(entity_pb._pb) for entity_pb in updated_keys]
 
         return index_updates, updated_keys
 
