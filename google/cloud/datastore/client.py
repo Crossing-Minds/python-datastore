@@ -622,7 +622,7 @@ class Client(ClientWithProject):
             index_updates, upd_keys = current.commit(retry=retry, timeout=timeout)
 
         if upd_keys:
-            updated_keys = [helpers.key_from_protobuf(entity_pb._pb) for entity_pb in upd_keys]
+            updated_keys = [helpers.key_from_protobuf(entity_pb) for entity_pb in upd_keys]
 
         return index_updates, updated_keys
 
