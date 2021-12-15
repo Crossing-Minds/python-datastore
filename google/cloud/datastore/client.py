@@ -572,7 +572,7 @@ class Client(ClientWithProject):
             to each individual attempt.  Only meaningful outside of another
             batch / transaction.
         """
-        self.put_multi(entities=[entity], retry=retry, timeout=timeout)
+        return self.put_multi(entities=[entity], retry=retry, timeout=timeout)
 
     def put_multi(self, entities, retry=None, timeout=None):
         """Save entities in the Cloud Datastore.
@@ -593,6 +593,11 @@ class Client(ClientWithProject):
             to each individual attempt.  Only meaningful outside of another
             batch / transaction.
 
+        :rtype: tuple
+        :returns: The pair of the number of index updates and a list of
+              :class:`.entity_pb2.Key` for each incomplete key
+              that was completed in the commit. Empty if not in_batch.
+
         :raises: :class:`ValueError` if ``entities`` is a single entity.
         """
         if isinstance(entities, Entity):
@@ -611,8 +616,12 @@ class Client(ClientWithProject):
         for entity in entities:
             current.put(entity)
 
+        index_updates = 0
+        updated_keys = []
         if not in_batch:
-            current.commit(retry=retry, timeout=timeout)
+            index_updates, updated_keys = current.commit(retry=retry, timeout=timeout)
+
+        return index_updates, updated_keys
 
     def delete(self, key, retry=None, timeout=None):
         """Delete the key in the Cloud Datastore.

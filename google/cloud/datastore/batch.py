@@ -291,13 +291,14 @@ class Batch(object):
             **kwargs,
         )
 
-        _, updated_keys = _parse_commit_response(commit_response_pb)
+        index_updates, updated_keys = _parse_commit_response(commit_response_pb)
         # If the back-end returns without error, we are guaranteed that
         # ``commit`` will return keys that match (length and
         # order) directly ``_partial_key_entities``.
         for new_key_pb, entity in zip(updated_keys, self._partial_key_entities):
             new_id = new_key_pb.path[-1].id
             entity.key = entity.key.completed_key(new_id)
+        return index_updates, updated_keys
 
     def commit(self, retry=None, timeout=None):
         """Commits the batch.
@@ -317,16 +318,25 @@ class Batch(object):
             Note that if ``retry`` is specified, the timeout applies
             to each individual attempt.
 
+        :rtype: tuple
+        :returns: The pair of the number of index updates and a list of
+              :class:`.entity_pb2.Key` for each incomplete key
+              that was completed in the commit.
+
         :raises: :class:`~exceptions.ValueError` if the batch is not
                  in progress.
         """
         if self._status != self._IN_PROGRESS:
             raise ValueError("Batch must be in progress to commit()")
 
+        index_updates = 0
+        updated_keys = []
         try:
-            self._commit(retry=retry, timeout=timeout)
+            index_updates, updated_keys = self._commit(retry=retry, timeout=timeout)
         finally:
             self._status = self._FINISHED
+
+        return index_updates, updated_keys
 
     def rollback(self):
         """Rolls back the current batch.
